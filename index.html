@@ -64,6 +64,7 @@ tr.inactivo td{color:#9ca3af}
 .foto-prev{position:relative;display:inline-block;margin-top:8px}
 .foto-prev img{max-width:220px;max-height:220px;border-radius:10px;border:1px solid var(--line);display:block}
 .foto-prev button{position:absolute;top:-8px;right:-8px;width:28px;height:28px;border-radius:50%;border:0;background:#b91c1c;color:#fff;cursor:pointer;font-weight:700}
+.hist-acc{margin-top:6px}
 .hist-foto img{max-width:200px;max-height:200px;border-radius:8px;border:1px solid var(--line);margin-top:6px;display:block}
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:12px 18px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;z-index:20;max-width:90%}
 #toast.show{opacity:1}#toast.err{background:#b91c1c}
@@ -111,7 +112,7 @@ tr.inactivo td{color:#9ca3af}
       </div>
 
       <div id="form" class="card hide">
-        <h3>Nuevo registro</h3>
+        <h3 id="form-titulo">Nuevo registro</h3>
         <label>Tipo de registro</label>
         <div class="seg" id="seg-tipo"></div>
         <label>Condición en que queda el implemento</label>
@@ -124,9 +125,13 @@ tr.inactivo td{color:#9ca3af}
         <label class="foto-box" id="foto-box" for="r-foto">📷 Tomar o subir foto</label>
         <input id="r-foto" type="file" accept="image/*" class="hide">
         <div id="foto-prev" class="foto-prev hide"><img id="foto-img" alt="Vista previa"><button type="button" id="foto-quitar" title="Quitar foto">×</button></div>
+        <div id="r-pin-wrap" class="hide" style="max-width:260px">
+          <label for="r-pin">PIN de administración</label><input id="r-pin" type="password">
+        </div>
         <div class="row" style="margin-top:12px">
           <button class="btn" id="r-guardar">Guardar registro</button>
           <button class="btn sec" id="r-cancelar">Cancelar</button>
+          <button class="btn dan hide" id="r-eliminar" style="margin-left:auto">Eliminar registro</button>
         </div>
       </div>
 
@@ -226,6 +231,8 @@ const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto'
 let DATA = null, ACTUAL = null, HIST = [], TODOS = null;
 const SEL = { tipo: 'Uso', cond: 'Bueno' };
 let FOTO = null; // dataURL JPEG reducida
+let FOTO_ACCION = ''; // en edición: 'mantener' | 'nueva' | 'quitar'
+let EDIT = null; // registro que se está editando (null = nuevo)
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -309,6 +316,7 @@ function renderLista() {
 /* ---------- Detalle ---------- */
 $('#d-volver').addEventListener('click', () => mostrar('lista'));
 $('#d-nuevo').addEventListener('click', () => { resetForm(); $('#form').classList.remove('hide'); $('#form').scrollIntoView({ behavior: 'smooth' }); });
+$('#hist').addEventListener('click', e => { const b = e.target.closest('[data-edit]'); if (b) abrirEdicion(b.dataset.edit); });
 $('#f-tipo').addEventListener('change', renderHist);
 $('#f-mes').addEventListener('change', renderHist);
 
@@ -361,9 +369,10 @@ function renderHist() {
     <li class="t-${cls(r.tipo)}">
       <div class="row sp"><b>${esc(r.fecha)} · ${esc(r.hora)}</b>
         <span><span class="badge t-${cls(r.tipo)}">${esc(r.tipo)}</span> <span class="badge c-${cls(r.condicion)}">${esc(r.condicion)}</span></span></div>
-      <div class="mut">Registró: ${esc(r.responsable)}</div>
+      <div class="mut">Registró: ${esc(r.responsable)}${r.editado ? ' · editado ' + esc(r.editado) : ''}</div>
       ${r.observaciones ? `<div style="margin-top:4px;white-space:pre-wrap">${esc(r.observaciones)}</div>` : ''}
       ${r.foto ? `<a class="hist-foto" href="${esc(r.foto)}" target="_blank">${r.fotoId ? `<img src="https://drive.google.com/thumbnail?id=${esc(r.fotoId)}&sz=w400" alt="Foto" onerror="this.outerHTML='📷 Ver foto'">` : '📷 Ver foto'}</a>` : ''}
+      ${r.rid ? `<div class="hist-acc"><button class="btn sec sm" data-edit="${esc(r.rid)}">✏️ Editar / eliminar</button></div>` : ''}
     </li>`).join('') + '</ul>'
     : `<div class="mut">${HIST.length ? 'Sin registros con ese filtro.' : 'Este implemento aún no tiene registros.'}</div>`;
 }
@@ -375,7 +384,8 @@ function armarFormulario() {
   $('#seg-tipo').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { SEL.tipo = b.dataset.val; marcarSeg(); } });
   $('#seg-cond').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { SEL.cond = b.dataset.val; marcarSeg(); } });
   $('#r-guardar').addEventListener('click', guardar);
-  $('#r-cancelar').addEventListener('click', () => $('#form').classList.add('hide'));
+  $('#r-cancelar').addEventListener('click', () => { resetForm(); $('#form').classList.add('hide'); });
+  $('#r-eliminar').addEventListener('click', eliminarRegistro);
   $('#r-foto').addEventListener('change', cargarFoto);
   $('#foto-quitar').addEventListener('click', quitarFoto);
 }
@@ -394,6 +404,7 @@ function cargarFoto(e) {
       c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
       FOTO = c.toDataURL('image/jpeg', 0.8);
+      FOTO_ACCION = 'nueva';
       $('#foto-img').src = FOTO;
       $('#foto-prev').classList.remove('hide');
       $('#foto-box').classList.add('hide');
@@ -405,6 +416,7 @@ function cargarFoto(e) {
 }
 function quitarFoto() {
   FOTO = null;
+  FOTO_ACCION = (EDIT && EDIT.foto) ? 'quitar' : '';
   $('#r-foto').value = '';
   $('#foto-img').removeAttribute('src');
   $('#foto-prev').classList.add('hide');
@@ -415,10 +427,70 @@ function marcarSeg() {
   document.querySelectorAll('#seg-cond button').forEach(b => b.classList.toggle('on', b.dataset.val === SEL.cond));
 }
 function resetForm() {
+  EDIT = null;
   SEL.tipo = 'Uso'; SEL.cond = 'Bueno'; marcarSeg();
   $('#r-resp').value = ls('responsable');
   $('#r-obs').value = '';
+  $('#form-titulo').textContent = 'Nuevo registro';
+  $('#r-guardar').textContent = 'Guardar registro';
+  $('#r-eliminar').classList.add('hide');
+  $('#r-pin-wrap').classList.add('hide');
   quitarFoto();
+}
+
+function abrirEdicion(rid) {
+  const r = HIST.find(x => x.rid === rid);
+  if (!r) { toast('No se encontró el registro', true); return; }
+  resetForm();
+  EDIT = r;
+  SEL.tipo = DATA.tipos.includes(r.tipo) ? r.tipo : 'Uso';
+  SEL.cond = DATA.condiciones.includes(r.condicion) ? r.condicion : 'Bueno';
+  marcarSeg();
+  $('#r-resp').value = r.responsable;
+  $('#r-obs').value = r.observaciones;
+  $('#form-titulo').textContent = 'Editar registro del ' + r.fecha + ' ' + r.hora;
+  $('#r-guardar').textContent = 'Guardar cambios';
+  $('#r-eliminar').classList.remove('hide');
+  $('#r-eliminar').textContent = 'Eliminar registro';
+  delete $('#r-eliminar').dataset.ok;
+  $('#r-pin-wrap').classList.toggle('hide', !DATA.requierePin);
+  if (r.foto) {
+    $('#foto-img').src = r.fotoId ? 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(r.fotoId) + '&sz=w400' : '';
+    $('#foto-prev').classList.remove('hide');
+    $('#foto-box').classList.add('hide');
+    FOTO_ACCION = 'mantener';
+  }
+  $('#form').classList.remove('hide');
+  $('#form').scrollIntoView({ behavior: 'smooth' });
+}
+
+function aplicarRespuesta(res, idImpl, msg) {
+  DATA = res.datos; HIST = res.historial; TODOS = null;
+  ACTUAL = DATA.implementos.find(i => i.id === idImpl) || ACTUAL;
+  resetForm();
+  $('#form').classList.add('hide');
+  pintarCabecera(); renderHist(); renderLista(); renderAdmin();
+  toast(msg);
+}
+
+async function eliminarRegistro() {
+  const b = $('#r-eliminar');
+  if (!EDIT) return;
+  if (!b.dataset.ok) { // doble clic para confirmar
+    b.dataset.ok = '1'; b.textContent = '¿Seguro? Toca otra vez';
+    setTimeout(() => { if (b.dataset.ok) { delete b.dataset.ok; b.textContent = 'Eliminar registro'; } }, 4000);
+    return;
+  }
+  b.disabled = true; b.textContent = 'Eliminando…';
+  try {
+    const res = await run('eliminarRegistro', EDIT.rid, $('#r-pin').value);
+    aplicarRespuesta(res, ACTUAL.id, 'Registro eliminado');
+  } catch (e) {
+    toast(errMsg(e), true);
+    delete b.dataset.ok; b.textContent = 'Eliminar registro';
+  } finally {
+    b.disabled = false;
+  }
 }
 
 async function guardar() {
@@ -427,19 +499,24 @@ async function guardar() {
   if ((d.tipo !== 'Uso' || d.condicion !== 'Bueno') && !d.observaciones) {
     toast('Describe la novedad o el mantenimiento en Observaciones', true); $('#r-obs').focus(); return;
   }
-  const btn = $('#r-guardar'); btn.disabled = true; btn.textContent = FOTO ? 'Subiendo foto…' : 'Guardando…';
+  const btn = $('#r-guardar'); const txt = btn.textContent;
+  btn.disabled = true; btn.textContent = FOTO ? 'Subiendo foto…' : 'Guardando…';
   try {
-    const res = await run('guardarRegistro', d);
-    ls('responsable', d.responsable);
-    DATA = res.datos; HIST = res.historial; TODOS = null;
-    ACTUAL = DATA.implementos.find(i => i.id === d.id) || ACTUAL;
-    $('#form').classList.add('hide');
-    pintarCabecera(); renderHist(); renderLista(); renderAdmin();
-    toast('Registro guardado ✔');
+    let res;
+    if (EDIT) {
+      d.rid = EDIT.rid; d.fotoAccion = FOTO_ACCION || 'mantener';
+      res = await run('editarRegistro', d, $('#r-pin').value);
+      aplicarRespuesta(res, d.id, 'Registro actualizado ✔');
+    } else {
+      res = await run('guardarRegistro', d);
+      ls('responsable', d.responsable);
+      aplicarRespuesta(res, d.id, 'Registro guardado ✔');
+    }
   } catch (e) {
     toast(errMsg(e), true);
+    btn.textContent = txt;
   } finally {
-    btn.disabled = false; btn.textContent = 'Guardar registro';
+    btn.disabled = false;
   }
 }
 
