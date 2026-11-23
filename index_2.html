@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Implementos de Bodega · ZKTeco</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--txt:#1f2937;--mut:#6b7280;--line:#e5e7eb;--pri:#0f766e}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:15px}
+header{background:#111827;color:#fff;padding:14px 16px 0;position:sticky;top:0;z-index:5}
+header h1{margin:0 0 8px;font-size:18px}
+header h1 small{color:#9ca3af;font-weight:400;font-size:13px}
+nav{display:flex;gap:2px;overflow-x:auto}
+nav button{background:none;border:0;color:#d1d5db;padding:10px 14px;font-size:14px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+nav button.on{color:#fff;border-color:#14b8a6}
+main{max-width:1000px;margin:0 auto;padding:16px}
+h2,h3{margin:0}
+.hide{display:none!important}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:12px}
+.grid3{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px}
+.grid .card{margin-top:0}
+.imp{cursor:pointer;transition:.15s}
+.imp:hover{border-color:var(--pri);box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.imp h3{font-size:16px}
+.mut{color:var(--mut);font-size:13px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sp{justify-content:space-between}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;background:#e5e7eb;color:#374151;white-space:nowrap}
+.c-Bueno{background:#dcfce7;color:#166534}.c-Regular{background:#fef3c7;color:#92400e}
+.c-Malo{background:#fee2e2;color:#991b1b}.c-Fueradeservicio{background:#374151;color:#fff}
+.badge.t-Uso{background:#ccfbf1;color:#115e59}.badge.t-Mantenimiento{background:#dbeafe;color:#1e40af}
+.badge.t-Novedad{background:#fef3c7;color:#92400e}.badge.t-DanoReparacion{background:#fee2e2;color:#991b1b}
+input,select,textarea{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font:inherit;background:#fff;color:inherit}
+select.auto{width:auto}
+label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
+.btn{display:inline-block;background:var(--pri);color:#fff;border:0;border-radius:8px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none}
+.btn.sec{background:#fff;color:var(--txt);border:1px solid #d1d5db}
+.btn.dan{background:#b91c1c}
+.btn.sm{padding:6px 10px;font-size:13px}
+.btn:disabled{opacity:.6;cursor:wait}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;min-width:110px;padding:10px;border:1px solid #d1d5db;background:#fff;border-radius:8px;cursor:pointer;font:inherit}
+.seg button.on{border-color:var(--pri);background:#ccfbf1;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.stat{background:#f9fafb;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;font-size:12px;color:var(--mut)}
+.stat b{display:block;font-size:22px;color:var(--txt)}
+.tl{list-style:none;margin:0;padding:0 0 0 6px}
+.tl li{border-left:3px solid var(--line);padding:10px 0 12px 16px;position:relative}
+.tl li:before{content:'';position:absolute;left:-7px;top:15px;width:11px;height:11px;border-radius:50%;background:#9ca3af}
+.tl li.t-Uso:before{background:#0f766e}.tl li.t-Mantenimiento:before{background:#2563eb}
+.tl li.t-Novedad:before{background:#d97706}.tl li.t-DanoReparacion:before{background:#dc2626}
+.tablewrap{overflow:auto;max-height:65vh;border:1px solid var(--line);border-radius:10px;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:#fff}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:#f9fafb;position:sticky;top:0;z-index:1}
+td.obs{white-space:pre-wrap;min-width:180px}
+tr.inactivo td{color:#9ca3af}
+.foto-box{border:2px dashed #d1d5db;border-radius:10px;padding:14px;text-align:center;cursor:pointer;color:var(--mut);display:block;font-weight:400}
+.foto-box:hover{border-color:var(--pri)}
+.foto-prev{position:relative;display:inline-block;margin-top:8px}
+.foto-prev img{max-width:220px;max-height:220px;border-radius:10px;border:1px solid var(--line);display:block}
+.foto-prev button{position:absolute;top:-8px;right:-8px;width:28px;height:28px;border-radius:50%;border:0;background:#b91c1c;color:#fff;cursor:pointer;font-weight:700}
+.hist-foto img{max-width:200px;max-height:200px;border-radius:8px;border:1px solid var(--line);margin-top:6px;display:block}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:12px 18px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;z-index:20;max-width:90%}
+#toast.show{opacity:1}#toast.err{background:#b91c1c}
+.loading{padding:30px;text-align:center;color:var(--mut)}
+.labels{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.label{border:1px dashed #9ca3af;border-radius:10px;padding:12px;text-align:center;background:#fff;break-inside:avoid;page-break-inside:avoid}
+.label .qr{display:flex;justify-content:center;margin:8px 0}
+.label .n{font-weight:700;font-size:16px}
+@media print{.no-print{display:none!important}body{background:#fff}main{padding:0;max-width:none}.label{border:1px dashed #000}}
+@media (max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.labels{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header class="no-print">
+    <h1>Implementos de Bodega <small>· ZKTeco Colombia</small></h1>
+    <nav>
+      <button data-v="lista" class="on">Implementos</button>
+      <button data-v="general">Historial general</button>
+      <button data-v="admin">Administrar</button>
+    </nav>
+  </header>
+
+  <main>
+    <div id="cargando" class="loading">Cargando…</div>
+
+    <!-- LISTA -->
+    <section id="v-lista" class="hide">
+      <input id="buscar" placeholder="Buscar implemento, ubicación o código…">
+      <div class="grid" id="lista"></div>
+    </section>
+
+    <!-- DETALLE -->
+    <section id="v-detalle" class="hide">
+      <button class="btn sec" id="d-volver">← Volver</button>
+      <div class="card">
+        <div class="row sp">
+          <div><h2 id="d-nombre"></h2><div class="mut" id="d-sub"></div></div>
+          <span id="d-estado" class="badge"></span>
+        </div>
+        <div id="d-baja" class="badge c-Malo hide" style="margin-top:8px">Dado de baja · solo consulta</div>
+        <div class="stats" id="d-stats"></div>
+        <button class="btn" id="d-nuevo">+ Registrar uso / novedad</button>
+      </div>
+
+      <div id="form" class="card hide">
+        <h3>Nuevo registro</h3>
+        <label>Tipo de registro</label>
+        <div class="seg" id="seg-tipo"></div>
+        <label>Condición en que queda el implemento</label>
+        <div class="seg" id="seg-cond"></div>
+        <label for="r-resp">Responsable</label>
+        <input id="r-resp" placeholder="Nombre de quien usa / registra">
+        <label for="r-obs">Observaciones</label>
+        <textarea id="r-obs" rows="3" placeholder="Ej: descargue de 12 cajas de lectoras; rueda trasera suena"></textarea>
+        <label>Foto del estado (opcional)</label>
+        <label class="foto-box" id="foto-box" for="r-foto">📷 Tomar o subir foto</label>
+        <input id="r-foto" type="file" accept="image/*" class="hide">
+        <div id="foto-prev" class="foto-prev hide"><img id="foto-img" alt="Vista previa"><button type="button" id="foto-quitar" title="Quitar foto">×</button></div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn" id="r-guardar">Guardar registro</button>
+          <button class="btn sec" id="r-cancelar">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row sp">
+          <h3>Historial</h3>
+          <div class="row">
+            <select id="f-tipo" class="auto"></select>
+            <select id="f-mes" class="auto"></select>
+          </div>
+        </div>
+        <div id="hist" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <!-- HISTORIAL GENERAL -->
+    <section id="v-general" class="hide">
+      <div class="card">
+        <div class="row">
+          <select id="g-imp" class="auto"></select>
+          <select id="g-tipo" class="auto"></select>
+          <select id="g-mes" class="auto"></select>
+          <input id="g-q" placeholder="Buscar responsable u observación" style="flex:1;min-width:180px">
+        </div>
+        <h3 style="margin-top:16px">Desglose por implemento</h3>
+        <div class="tablewrap" style="max-height:none">
+          <table>
+            <thead><tr><th>Implemento</th><th>Usos</th><th>Mantenimientos</th><th>Novedades / daños</th><th>Último registro</th></tr></thead>
+            <tbody id="g-resumen"></tbody>
+          </table>
+        </div>
+        <div class="row sp" style="margin-top:16px"><h3>Registros</h3><span class="mut" id="g-count"></span></div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Fecha</th><th>Hora</th><th>Implemento</th><th>Tipo</th><th>Condición</th><th>Responsable</th><th>Observaciones</th><th>Foto</th></tr></thead>
+            <tbody id="g-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADMINISTRAR -->
+    <section id="v-admin" class="hide">
+      <div class="card">
+        <h3>Agregar implemento</h3>
+        <div class="grid3">
+          <div><label for="a-cod">Código activo fijo</label><input id="a-cod" placeholder="Ej: ZKCOBV82" style="text-transform:uppercase"></div>
+          <div><label for="a-nombre">Nombre</label><input id="a-nombre" placeholder="Ej: Carreta 3"></div>
+          <div><label for="a-ubic">Ubicación</label><input id="a-ubic" placeholder="Ej: Bodega principal"></div>
+          <div><label for="a-desc">Descripción (opcional)</label><input id="a-desc" placeholder="Marca, capacidad, color…"></div>
+        </div>
+        <div id="pin-wrap" class="hide" style="max-width:260px">
+          <label for="a-pin">PIN de administración</label><input id="a-pin" type="password">
+        </div>
+        <button class="btn" id="a-agregar" style="margin-top:12px">Agregar</button>
+      </div>
+
+      <div class="card">
+        <div class="row sp">
+          <h3>Implementos registrados</h3>
+          <a class="btn sec" id="a-qr-todos" target="_blank">🖨 Imprimir todos los QR</a>
+        </div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Código activo</th><th>Nombre</th><th>Ubicación</th><th>Estado</th><th>Activo</th><th>Acciones</th></tr></thead>
+            <tbody id="a-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- VISTA DE IMPRESIÓN QR -->
+<div id="qrview" class="hide">
+  <main>
+    <div class="no-print row sp" style="margin-bottom:14px">
+      <div><h2>Etiquetas QR</h2><div class="mut">Imprime en hoja carta (Ctrl + P si el botón no abre la impresión) y pega cada etiqueta en su implemento.</div></div>
+      <div class="row"><button class="btn" onclick="window.print()">Imprimir</button><a class="btn sec" id="q-volver">Volver</a></div>
+    </div>
+    <div class="labels" id="labels"></div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ===== PÁGINA PUENTE (GitHub Pages) =====
+// Si vuelves a publicar Apps Script con "Nueva implementación", cambia esta URL.
+const API_URL = 'https://script.google.com/macros/s/AKfycbz50PLpv7-SUXy7hbZTIWlqy70kayjld0XNWQ9yoi5Ph6_A1reGGAqgvQRqInX1TbYj/exec';
+const _P = new URLSearchParams(location.search);
+const ID_INICIAL = _P.get('id') || '';
+const VISTA = _P.get('vista') || '';
+const URL_APP = location.origin + location.pathname;
+
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let DATA = null, ACTUAL = null, HIST = [], TODOS = null;
+const SEL = { tipo: 'Uso', cond: 'Bueno' };
+let FOTO = null; // dataURL JPEG reducida
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cls = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z]/g, '');
+const mesTxt = m => { const p = String(m).split('-'); return p.length === 2 ? MESES[+p[1] - 1] + ' ' + p[0] : m; };
+const stat = (n, t) => `<div class="stat"><b>${n}</b>${t}</div>`;
+
+// Dentro de Apps Script usa google.script.run; en la página puente usa fetch a la API (sin cookies)
+async function run(fn, ...args) {
+  if (window.google && google.script && google.script.run) {
+    return new Promise((ok, ko) => google.script.run.withSuccessHandler(ok).withFailureHandler(ko)[fn](...args));
+  }
+  let r;
+  try {
+    r = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ fn: fn, args: args }),
+      credentials: 'omit',
+      redirect: 'follow'
+    });
+  } catch (e) {
+    throw new Error('Sin conexión con el servidor. Revisa internet e intenta de nuevo.');
+  }
+  let j;
+  try { j = await r.json(); } catch (e) { throw new Error('Respuesta inválida del servidor (revisa que la app esté publicada para "Cualquier persona").'); }
+  if (!j.ok) throw new Error(j.error || 'Error desconocido');
+  return j.data;
+}
+function toast(msg, err) {
+  const t = $('#toast'); t.textContent = msg; t.className = 'show' + (err ? ' err' : '');
+  clearTimeout(t._h); t._h = setTimeout(() => t.className = '', 3200);
+}
+function ls(k, v) {
+  try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; }
+}
+function errMsg(e) { return (e && e.message) ? e.message : String(e); }
+
+/* ---------- Navegación ---------- */
+function mostrar(v) {
+  ['lista', 'detalle', 'general', 'admin'].forEach(x => $('#v-' + x).classList.toggle('hide', x !== v));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v || (v === 'detalle' && b.dataset.v === 'lista')));
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => {
+  if (b.dataset.v === 'general') abrirGeneral(); else mostrar(b.dataset.v);
+}));
+
+/* ---------- Inicio ---------- */
+window.addEventListener('load', async () => {
+  try {
+    DATA = await run('obtenerDatos');
+  } catch (e) {
+    $('#cargando').textContent = 'Error: ' + errMsg(e);
+    return;
+  }
+  $('#cargando').classList.add('hide');
+  if (VISTA === 'qr') return renderQR();
+  armarFormulario();
+  renderLista();
+  renderAdmin();
+  if (ID_INICIAL) abrirDetalle(ID_INICIAL, true); else mostrar('lista');
+});
+
+/* ---------- Lista ---------- */
+$('#buscar').addEventListener('input', renderLista);
+$('#lista').addEventListener('click', e => { const c = e.target.closest('[data-id]'); if (c) abrirDetalle(c.dataset.id, false); });
+
+function renderLista() {
+  const q = $('#buscar').value.toLowerCase();
+  const items = DATA.implementos.filter(i => i.activo && (i.nombre + ' ' + i.ubicacion + ' ' + i.id + ' ' + i.codigo).toLowerCase().includes(q));
+  $('#lista').innerHTML = items.length ? items.map(i => `
+    <div class="card imp" data-id="${esc(i.id)}">
+      <div class="row sp"><h3>${esc(i.nombre)}</h3><span class="badge c-${cls(i.estado)}">${esc(i.estado)}</span></div>
+      <div class="mut">${esc(i.ubicacion)} · <b>${esc(i.codigo || i.id)}</b></div>
+      <div class="mut" style="margin-top:8px">${i.stats.usos} usos · ${i.stats.mant} mant. · ${i.stats.nov} novedades</div>
+      <div class="mut">Último: ${i.stats.ultimo ? esc(i.stats.ultimo) : 'sin registros'}</div>
+    </div>`).join('') : '<div class="mut">No hay implementos.</div>';
+}
+
+/* ---------- Detalle ---------- */
+$('#d-volver').addEventListener('click', () => mostrar('lista'));
+$('#d-nuevo').addEventListener('click', () => { resetForm(); $('#form').classList.remove('hide'); $('#form').scrollIntoView({ behavior: 'smooth' }); });
+$('#f-tipo').addEventListener('change', renderHist);
+$('#f-mes').addEventListener('change', renderHist);
+
+async function abrirDetalle(id, conForm) {
+  const cod = String(id || '').toUpperCase();
+  const imp = DATA.implementos.find(i => i.id === id || (i.codigo && i.codigo === cod));
+  if (!imp) { toast('No se encontró el implemento ' + id, true); mostrar('lista'); return; }
+  ACTUAL = imp;
+  pintarCabecera();
+  $('#f-tipo').innerHTML = '<option value="">Todos los tipos</option>' + DATA.tipos.map(t => `<option>${esc(t)}</option>`).join('');
+  $('#f-mes').innerHTML = '<option value="">Todos los meses</option>';
+  resetForm();
+  $('#form').classList.toggle('hide', !(conForm && imp.activo));
+  mostrar('detalle');
+  $('#d-stats').innerHTML = '';
+  $('#hist').innerHTML = '<div class="loading">Cargando historial…</div>';
+  try {
+    HIST = await run('obtenerHistorial', imp.id);
+    renderHist();
+  } catch (e) {
+    $('#hist').innerHTML = '<div class="mut">Error: ' + esc(errMsg(e)) + '</div>';
+  }
+}
+
+function pintarCabecera() {
+  const imp = ACTUAL;
+  $('#d-nombre').textContent = imp.nombre;
+  $('#d-sub').textContent = imp.ubicacion + ' · Activo fijo: ' + (imp.codigo || 'sin código') + ' · ' + imp.id + (imp.descripcion ? ' · ' + imp.descripcion : '');
+  $('#d-estado').className = 'badge c-' + cls(imp.estado);
+  $('#d-estado').textContent = imp.estado;
+  $('#d-baja').classList.toggle('hide', imp.activo);
+  $('#d-nuevo').classList.toggle('hide', !imp.activo);
+}
+
+function llenarMeses(sel, regs) {
+  const el = $(sel), v = el.value;
+  const meses = [...new Set(regs.map(r => r.mes).filter(Boolean))].sort().reverse();
+  el.innerHTML = '<option value="">Todos los meses</option>' + meses.map(m => `<option value="${esc(m)}">${esc(mesTxt(m))}</option>`).join('');
+  el.value = meses.includes(v) ? v : '';
+}
+
+function renderHist() {
+  let u = 0, m = 0, n = 0;
+  HIST.forEach(r => r.tipo === 'Uso' ? u++ : r.tipo === 'Mantenimiento' ? m++ : n++);
+  $('#d-stats').innerHTML = stat(HIST.length, 'Registros') + stat(u, 'Usos') + stat(m, 'Mantenimientos') + stat(n, 'Novedades / daños');
+  llenarMeses('#f-mes', HIST);
+  const ft = $('#f-tipo').value, fm = $('#f-mes').value;
+  const rows = HIST.filter(r => (!ft || r.tipo === ft) && (!fm || r.mes === fm));
+  $('#hist').innerHTML = rows.length ? '<ul class="tl">' + rows.map(r => `
+    <li class="t-${cls(r.tipo)}">
+      <div class="row sp"><b>${esc(r.fecha)} · ${esc(r.hora)}</b>
+        <span><span class="badge t-${cls(r.tipo)}">${esc(r.tipo)}</span> <span class="badge c-${cls(r.condicion)}">${esc(r.condicion)}</span></span></div>
+      <div class="mut">Registró: ${esc(r.responsable)}</div>
+      ${r.observaciones ? `<div style="margin-top:4px;white-space:pre-wrap">${esc(r.observaciones)}</div>` : ''}
+      ${r.foto ? `<a class="hist-foto" href="${esc(r.foto)}" target="_blank">${r.fotoId ? `<img src="https://drive.google.com/thumbnail?id=${esc(r.fotoId)}&sz=w400" alt="Foto" onerror="this.outerHTML='📷 Ver foto'">` : '📷 Ver foto'}</a>` : ''}
+    </li>`).join('') + '</ul>'
+    : `<div class="mut">${HIST.length ? 'Sin registros con ese filtro.' : 'Este implemento aún no tiene registros.'}</div>`;
+}
+
+/* ---------- Formulario ---------- */
+function armarFormulario() {
+  $('#seg-tipo').innerHTML = DATA.tipos.map(t => `<button type="button" data-val="${esc(t)}">${esc(t)}</button>`).join('');
+  $('#seg-cond').innerHTML = DATA.condiciones.map(c => `<button type="button" data-val="${esc(c)}">${esc(c)}</button>`).join('');
+  $('#seg-tipo').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { SEL.tipo = b.dataset.val; marcarSeg(); } });
+  $('#seg-cond').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { SEL.cond = b.dataset.val; marcarSeg(); } });
+  $('#r-guardar').addEventListener('click', guardar);
+  $('#r-cancelar').addEventListener('click', () => $('#form').classList.add('hide'));
+  $('#r-foto').addEventListener('change', cargarFoto);
+  $('#foto-quitar').addEventListener('click', quitarFoto);
+}
+
+// Reduce la foto (máx. 1280 px, JPEG 80%) para que suba rápido desde el celular
+function cargarFoto(e) {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  if (!/^image\//.test(f.type)) { toast('El archivo no es una imagen', true); quitarFoto(); return; }
+  const lector = new FileReader();
+  lector.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 1280, k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      FOTO = c.toDataURL('image/jpeg', 0.8);
+      $('#foto-img').src = FOTO;
+      $('#foto-prev').classList.remove('hide');
+      $('#foto-box').classList.add('hide');
+    };
+    img.onerror = () => { toast('No se pudo leer la imagen', true); quitarFoto(); };
+    img.src = lector.result;
+  };
+  lector.readAsDataURL(f);
+}
+function quitarFoto() {
+  FOTO = null;
+  $('#r-foto').value = '';
+  $('#foto-img').removeAttribute('src');
+  $('#foto-prev').classList.add('hide');
+  $('#foto-box').classList.remove('hide');
+}
+function marcarSeg() {
+  document.querySelectorAll('#seg-tipo button').forEach(b => b.classList.toggle('on', b.dataset.val === SEL.tipo));
+  document.querySelectorAll('#seg-cond button').forEach(b => b.classList.toggle('on', b.dataset.val === SEL.cond));
+}
+function resetForm() {
+  SEL.tipo = 'Uso'; SEL.cond = 'Bueno'; marcarSeg();
+  $('#r-resp').value = ls('responsable');
+  $('#r-obs').value = '';
+  quitarFoto();
+}
+
+async function guardar() {
+  const d = { id: ACTUAL.id, tipo: SEL.tipo, condicion: SEL.cond, responsable: $('#r-resp').value.trim(), observaciones: $('#r-obs').value.trim(), foto: FOTO ? { data: FOTO } : null };
+  if (!d.responsable) { toast('Escribe el nombre del responsable', true); $('#r-resp').focus(); return; }
+  if ((d.tipo !== 'Uso' || d.condicion !== 'Bueno') && !d.observaciones) {
+    toast('Describe la novedad o el mantenimiento en Observaciones', true); $('#r-obs').focus(); return;
+  }
+  const btn = $('#r-guardar'); btn.disabled = true; btn.textContent = FOTO ? 'Subiendo foto…' : 'Guardando…';
+  try {
+    const res = await run('guardarRegistro', d);
+    ls('responsable', d.responsable);
+    DATA = res.datos; HIST = res.historial; TODOS = null;
+    ACTUAL = DATA.implementos.find(i => i.id === d.id) || ACTUAL;
+    $('#form').classList.add('hide');
+    pintarCabecera(); renderHist(); renderLista(); renderAdmin();
+    toast('Registro guardado ✔');
+  } catch (e) {
+    toast(errMsg(e), true);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Guardar registro';
+  }
+}
+
+/* ---------- Historial general ---------- */
+['#g-imp', '#g-tipo', '#g-mes'].forEach(s => $(s).addEventListener('change', renderGeneral));
+$('#g-q').addEventListener('input', renderGeneral);
+
+async function abrirGeneral() {
+  mostrar('general');
+  $('#g-imp').innerHTML = '<option value="">Todos los implementos</option>' +
+    DATA.implementos.map(i => `<option value="${esc(i.id)}">${i.codigo ? esc(i.codigo) + ' · ' : ''}${esc(i.nombre)} – ${esc(i.ubicacion)}${i.activo ? '' : ' (baja)'}</option>`).join('');
+  $('#g-tipo').innerHTML = '<option value="">Todos los tipos</option>' + DATA.tipos.map(t => `<option>${esc(t)}</option>`).join('');
+  if (!TODOS) {
+    $('#g-body').innerHTML = '<tr><td colspan="8" class="loading">Cargando…</td></tr>';
+    $('#g-resumen').innerHTML = '';
+    try { TODOS = await run('obtenerHistorial', ''); }
+    catch (e) { $('#g-body').innerHTML = '<tr><td colspan="8">Error: ' + esc(errMsg(e)) + '</td></tr>'; return; }
+  }
+  llenarMeses('#g-mes', TODOS);
+  renderGeneral();
+}
+
+function renderGeneral() {
+  if (!TODOS) return;
+  const fi = $('#g-imp').value, ft = $('#g-tipo').value, fm = $('#g-mes').value, q = $('#g-q').value.toLowerCase();
+  const base = TODOS.filter(r => (!fm || r.mes === fm) && (!q || (r.responsable + ' ' + r.observaciones).toLowerCase().includes(q)));
+
+  // Desglose por implemento (respeta mes y búsqueda)
+  const res = {};
+  base.forEach(r => {
+    const s = res[r.id] || (res[r.id] = { u: 0, m: 0, n: 0, ult: '', t: 0, nom: r.implemento });
+    r.tipo === 'Uso' ? s.u++ : r.tipo === 'Mantenimiento' ? s.m++ : s.n++;
+    if (r.t >= s.t) { s.t = r.t; s.ult = r.fecha + ' ' + r.hora; }
+  });
+  const impls = DATA.implementos.filter(i => i.activo || res[i.id]).filter(i => !fi || i.id === fi);
+  $('#g-resumen').innerHTML = impls.map(i => {
+    const s = res[i.id] || { u: 0, m: 0, n: 0, ult: '' };
+    return `<tr><td><b>${esc(i.nombre)}</b><div class="mut">${esc(i.ubicacion)} · ${esc(i.codigo || i.id)}</div></td><td>${s.u}</td><td>${s.m}</td><td>${s.n}</td><td>${esc(s.ult || '—')}</td></tr>`;
+  }).join('') || '<tr><td colspan="5" class="mut">Sin datos.</td></tr>';
+
+  const rows = base.filter(r => (!fi || r.id === fi) && (!ft || r.tipo === ft));
+  $('#g-count').textContent = rows.length + ' registro(s)';
+  $('#g-body').innerHTML = rows.map(r => `<tr>
+      <td>${esc(r.fecha)}</td><td>${esc(r.hora)}</td><td>${esc(r.implemento)}</td>
+      <td><span class="badge t-${cls(r.tipo)}">${esc(r.tipo)}</span></td>
+      <td><span class="badge c-${cls(r.condicion)}">${esc(r.condicion)}</span></td>
+      <td>${esc(r.responsable)}</td><td class="obs">${esc(r.observaciones)}</td>
+      <td>${r.foto ? `<a href="${esc(r.foto)}" target="_blank">📷 Ver</a>` : ''}</td></tr>`).join('')
+    || '<tr><td colspan="8" class="mut">Sin registros con ese filtro.</td></tr>';
+}
+
+/* ---------- Administrar ---------- */
+$('#a-agregar').addEventListener('click', agregar);
+$('#a-body').addEventListener('click', accionAdmin);
+
+function renderAdmin() {
+  $('#pin-wrap').classList.toggle('hide', !DATA.requierePin);
+  $('#a-qr-todos').href = URL_APP + '?vista=qr';
+  $('#a-body').innerHTML = DATA.implementos.map(i => `
+    <tr class="${i.activo ? '' : 'inactivo'}">
+      <td><b>${esc(i.codigo || '—')}</b><div class="mut">${esc(i.id)}</div></td><td>${esc(i.nombre)}</td><td>${esc(i.ubicacion)}</td>
+      <td><span class="badge c-${cls(i.estado)}">${esc(i.estado)}</span></td>
+      <td>${i.activo ? 'Sí' : 'No'}</td>
+      <td class="row">
+        <button class="btn sec sm" data-acc="ver" data-id="${esc(i.id)}">Historial</button>
+        ${i.activo ? `<a class="btn sec sm" target="_blank" href="${esc(URL_APP + '?vista=qr&id=' + encodeURIComponent(i.id))}">QR</a>` : ''}
+      </td>
+    </tr>`).join('');
+}
+
+async function agregar() {
+  const d = { codigo: $('#a-cod').value.trim().toUpperCase(), nombre: $('#a-nombre').value.trim(), ubicacion: $('#a-ubic').value.trim(), descripcion: $('#a-desc').value.trim() };
+  if (!d.nombre) { toast('Escribe el nombre del implemento', true); return; }
+  const btn = $('#a-agregar'); btn.disabled = true;
+  try {
+    DATA = await run('agregarImplemento', d, $('#a-pin').value);
+    $('#a-cod').value = $('#a-nombre').value = $('#a-ubic').value = $('#a-desc').value = '';
+    renderAdmin(); renderLista(); TODOS = null;
+    toast('Implemento agregado ✔');
+  } catch (e) { toast(errMsg(e), true); }
+  finally { btn.disabled = false; }
+}
+
+function accionAdmin(e) {
+  const b = e.target.closest('button[data-acc]'); if (!b) return;
+  if (b.dataset.acc === 'ver') abrirDetalle(b.dataset.id, false);
+}
+
+/* ---------- Etiquetas QR ---------- */
+function renderQR() {
+  $('#app').classList.add('hide');
+  $('#qrview').classList.remove('hide');
+  $('#q-volver').href = URL_APP;
+  const items = DATA.implementos.filter(i => i.activo && (!ID_INICIAL || i.id === ID_INICIAL));
+  const cont = $('#labels');
+  cont.innerHTML = items.map(i => `
+    <div class="label">
+      <div class="mut">ZKTeco Colombia · Bodega</div>
+      <div class="qr" data-id="${esc(i.id)}"></div>
+      <div class="n">${esc(i.nombre)}</div>
+      <div class="mut">${esc(i.ubicacion)}</div>
+      <div style="font-size:15px;font-weight:700;margin-top:4px">${esc(i.codigo || i.id)}</div>
+      <div class="mut">Escanea para registrar uso</div>
+    </div>`).join('') || '<div class="mut">No hay implementos activos.</div>';
+  if (typeof QRCode === 'undefined') { toast('No cargó la librería de QR. Revisa la conexión y recarga.', true); return; }
+  const base = DATA.urlQR || URL_APP;
+  cont.querySelectorAll('.qr').forEach(el => new QRCode(el, {
+    text: base + '?id=' + encodeURIComponent(el.dataset.id),
+    width: 150, height: 150, correctLevel: QRCode.CorrectLevel.M
+  }));
+}
+</script>
+</body>
+</html>
